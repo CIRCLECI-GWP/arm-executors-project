@@ -28,7 +28,7 @@ commands:
 jobs:
   run-tests:
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2204:current
     resource_class: arm.medium
     steps:
       - checkout
@@ -45,7 +45,7 @@ jobs:
           path: test-results
   build_docker_image:
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2204:current
     resource_class: arm.medium
     steps:
       - checkout
@@ -59,7 +59,7 @@ jobs:
             docker push -a $DOCKER_LOGIN/$IMAGE_NAME
   deploy_aws_ecs:
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2204:current
     resource_class: arm.medium
     steps:
       - checkout
@@ -82,7 +82,7 @@ jobs:
               --auto-approve
   destroy_aws_ecs:
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2204:current
     resource_class: arm.medium
     steps:
       - checkout
