@@ -59,27 +59,41 @@ resource "aws_iam_instance_profile" "ecs_agent" {
 
 
 # AWS Auto Scale Launch Configuration
-resource "aws_launch_configuration" "app" {
-  name_prefix = "app-arm-"
-  security_groups = [
-    aws_security_group.app-arm-22.id,
-    aws_security_group.app-arm-80.id,
-    aws_security_group.app-arm-ELB-HTTP80.id
-  ]
-  key_name                    = var.key_pair
-  image_id                    = var.ami
-  instance_type               = var.instance_type
-  iam_instance_profile        = aws_iam_instance_profile.ecs_agent.name
-  user_data                   = data.template_file.user_data.rendered
-  associate_public_ip_address = true
+resource "aws_launch_template" "app" {
+  name_prefix   = "app-arm-"
+  image_id      = var.ami
+  instance_type = var.instance_type
+  key_name      = var.key_pair
 
-  root_block_device {
-    volume_size           = 60
-    volume_type           = "standard"
-    delete_on_termination = true
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups = [
+      aws_security_group.app-arm-22.id,
+      aws_security_group.app-arm-80.id,
+      aws_security_group.app-arm-ELB-HTTP80.id
+    ]
   }
-  lifecycle {
-    create_before_destroy = true
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ecs_agent.name
+  }
+
+  user_data = base64encode(data.template_file.user_data.rendered)
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size           = 60
+      volume_type           = "gp2"
+      delete_on_termination = true
+    }
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "app-arm"
+    }
   }
 }
 
@@ -89,11 +103,16 @@ resource "aws_autoscaling_group" "app" {
     aws_subnet.pub_subnet_a.id,
     aws_subnet.pub_subnet_b.id
   ]
-  min_size             = var.asg_min
-  max_size             = var.asg_max
-  desired_capacity     = var.asg_desired
-  launch_configuration = aws_launch_configuration.app.name
-  target_group_arns    = [aws_alb_target_group.alb.arn]
+  min_size         = var.asg_min
+  max_size         = var.asg_max
+  desired_capacity = var.asg_desired
+  target_group_arns = [aws_alb_target_group.alb.arn]
+
+  launch_template {
+    id      = aws_launch_template.app.id
+    version = "$Latest"
+  }
+
   tag {
     key                 = "Name"
     value               = "app-arm"
