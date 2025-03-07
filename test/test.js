@@ -1,16 +1,19 @@
 var request = require("supertest"),
   assert = require("assert"),
   helloWorld = require("../app.js"),
-  base_url = "http://localhost:5000/";
+  base_url = "http://localhost:5000";
 
 describe("Welcome to CI/CD Server", function () {
   describe("GET /", function () {
     it("returns status code 200", function (done) {
-      request.get(base_url, function (error, response, body) {
-        assert.equal(200, response.statusCode);
-        helloWorld.close();
-        done();
-      });
+      request(base_url)
+        .get("/")
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+          helloWorld.close();
+          done();
+        });
     });
   });
 
